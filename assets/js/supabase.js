@@ -1,12 +1,22 @@
 /* ============================================
    Dimsum Denaya — Supabase Client
+   Menggunakan project Supabase yang sama dengan LaunchPage Studio
    ============================================ */
 
 // ============================================
-// Configuration (isi setelah buat project Supabase)
+// Configuration (sama dengan LaunchPage Studio)
 // ============================================
-const DD_SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const DD_SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const DD_SUPABASE_URL = 'https://ifozejithwettwcayzqb.supabase.co';
+const DD_SUPABASE_ANON_KEY = 'eyJhbG...jPHM'; // GANTI dengan anon key real setelah buat Supabase user
+
+// Prefix tabel untuk Dimsum Denaya (biar tidak bentrok dengan LaunchPage)
+const DD_TABLE = {
+  menu: 'dd_menu',
+  testimoni: 'dd_testimoni',
+  galeri: 'dd_galeri',
+  config: 'dd_config',
+  orders: 'dd_orders',
+};
 
 // ============================================
 // Supabase Client
@@ -31,7 +41,7 @@ async function ddGetConfig(key) {
     const sb = ddInitSupabase();
     if (!sb) return null;
     const { data, error } = await sb
-      .from('config')
+      .from(DD_TABLE.config)
       .select('value')
       .eq('key', key)
       .maybeSingle();
@@ -48,7 +58,7 @@ async function ddGetAllConfig() {
     const sb = ddInitSupabase();
     if (!sb) return {};
     const { data, error } = await sb
-      .from('config')
+      .from(DD_TABLE.config)
       .select('key, value');
     if (error) throw error;
     const config = {};
@@ -70,7 +80,7 @@ async function ddGetMenu() {
     const sb = ddInitSupabase();
     if (!sb) return null;
     const { data, error } = await sb
-      .from('menu')
+      .from(DD_TABLE.menu)
       .select('*')
       .eq('tersedia', true)
       .order('harga', { ascending: true });
@@ -86,7 +96,7 @@ async function ddAddMenuItem(item) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { data, error } = await sb
-    .from('menu')
+    .from(DD_TABLE.menu)
     .insert([{
       menu_id: item.menu_id,
       nama: item.nama,
@@ -107,7 +117,7 @@ async function ddUpdateMenuItem(menuId, updates) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { data, error } = await sb
-    .from('menu')
+    .from(DD_TABLE.menu)
     .update(updates)
     .eq('menu_id', menuId)
     .select()
@@ -120,7 +130,7 @@ async function ddDeleteMenuItem(menuId) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { error } = await sb
-    .from('menu')
+    .from(DD_TABLE.menu)
     .delete()
     .eq('menu_id', menuId);
   if (error) throw error;
@@ -135,7 +145,7 @@ async function ddGetTestimoni() {
     const sb = ddInitSupabase();
     if (!sb) return null;
     const { data, error } = await sb
-      .from('testimoni')
+      .from(DD_TABLE.testimoni)
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -150,7 +160,7 @@ async function ddAddTestimoni(item) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { data, error } = await sb
-    .from('testimoni')
+    .from(DD_TABLE.testimoni)
     .insert([{
       nama: item.nama,
       avatar: item.avatar || '',
@@ -167,7 +177,7 @@ async function ddDeleteTestimoni(id) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { error } = await sb
-    .from('testimoni')
+    .from(DD_TABLE.testimoni)
     .delete()
     .eq('id', id);
   if (error) throw error;
@@ -182,7 +192,7 @@ async function ddGetGaleri() {
     const sb = ddInitSupabase();
     if (!sb) return null;
     const { data, error } = await sb
-      .from('galeri')
+      .from(DD_TABLE.galeri)
       .select('*')
       .order('urutan', { ascending: true });
     if (error) throw error;
@@ -197,7 +207,7 @@ async function ddAddGaleri(item) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { data, error } = await sb
-    .from('galeri')
+    .from(DD_TABLE.galeri)
     .insert([{
       src: item.src,
       alt: item.alt || '',
@@ -214,7 +224,7 @@ async function ddDeleteGaleri(id) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { error } = await sb
-    .from('galeri')
+    .from(DD_TABLE.galeri)
     .delete()
     .eq('id', id);
   if (error) throw error;
@@ -222,13 +232,12 @@ async function ddDeleteGaleri(id) {
 }
 
 // ============================================
-// Orders (pesanan via form)
+// Orders (pesanan pelanggan)
 // ============================================
 async function ddSubmitOrder(order) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
 
-  // Generate order ID
   const date = new Date();
   const dateStr = date.getFullYear().toString().slice(-2) +
     String(date.getMonth() + 1).padStart(2, '0') +
@@ -237,7 +246,7 @@ async function ddSubmitOrder(order) {
   const orderId = 'DD-' + dateStr + '-' + rand;
 
   const { data, error } = await sb
-    .from('orders')
+    .from(DD_TABLE.orders)
     .insert([{
       order_id: orderId,
       name: order.name,
@@ -255,7 +264,7 @@ async function ddSubmitOrder(order) {
 }
 
 // ============================================
-// Auth (untuk admin panel)
+// Auth (admin panel)
 // ============================================
 async function ddAdminLogin(email, password) {
   const sb = ddInitSupabase();
@@ -287,7 +296,7 @@ async function ddGetSession() {
 async function ddGetOrders(statusFilter) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
-  let query = sb.from('orders').select('*').order('created_at', { ascending: false });
+  let query = sb.from(DD_TABLE.orders).select('*').order('created_at', { ascending: false });
   if (statusFilter) {
     query = query.eq('status', statusFilter);
   }
@@ -300,7 +309,7 @@ async function ddUpdateOrderStatus(orderId, status) {
   const sb = ddInitSupabase();
   if (!sb) throw new Error('Supabase not initialized');
   const { error } = await sb
-    .from('orders')
+    .from(DD_TABLE.orders)
     .update({ status: status })
     .eq('order_id', orderId);
   if (error) throw error;
