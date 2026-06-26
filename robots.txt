@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /assets/
+Disallow: /data/
+
+Sitemap: https://dimsumdenaya.my.id/sitemap.xml

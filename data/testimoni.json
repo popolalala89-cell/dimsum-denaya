@@ -1,0 +1,32 @@
+[
+  {
+    "nama": "Ibu Rina",
+    "avatar": "assets/images/testimoni/1.jpg",
+    "rating": 5,
+    "teks": "Dimsumnya lembut banget. Anak-anak suka banget, udah pesen berkali-kali. Recomended!"
+  },
+  {
+    "nama": "Bapak Andi",
+    "avatar": "assets/images/testimoni/2.jpg",
+    "rating": 4,
+    "teks": "Rasa enak, pengiriman cepat, packing rapi. Langsung jadi langganan deh."
+  },
+  {
+    "nama": "Mbak Sari",
+    "avatar": "assets/images/testimoni/3.jpg",
+    "rating": 5,
+    "teks": "Dimsumnya fresh, bumbunya pas. Siomay ayamnya favorit saya. Murah mer mer."
+  },
+  {
+    "nama": "Keluarga Wijaya",
+    "avatar": "assets/images/testimoni/4.jpg",
+    "rating": 5,
+    "teks": "Enak, murah, recommended banget buat frozen stock di rumah."
+  },
+  {
+    "nama": "Mas Dwi",
+    "avatar": "assets/images/testimoni/5.jpg",
+    "rating": 4,
+    "teks": "Buat temen ngopi sore, dimsumnya cocok banget. Crackernya juara."
+  }
+]

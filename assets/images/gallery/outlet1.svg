@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300">
+  <rect width="600" height="300" fill="#FFF9F5"/>
+  <rect width="600" height="300" fill="#6E2A29" opacity="0.08"/>
+  <g transform="translate(300,130)" text-anchor="middle">
+    <text font-family="Arial" font-size="60">🏪</text>
+  </g>
+  <g transform="translate(300,190)" text-anchor="middle">
+    <text font-family="Arial" font-size="16" fill="#999">Outlet</text>
+  </g>
+</svg>

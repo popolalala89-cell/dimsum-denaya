@@ -1,0 +1,37 @@
+[
+  {
+    "id": "siomay-ayam",
+    "nama": "Siomay Ayam Premium",
+    "harga": 2000,
+    "gambar": "assets/images/menu/siomay-ayam.jpg",
+    "badge": "Best Seller"
+  },
+  {
+    "id": "hakau-udang",
+    "nama": "Hakau Udang",
+    "harga": 2500,
+    "gambar": "assets/images/menu/hakau-udang.jpg",
+    "badge": "Favorit"
+  },
+  {
+    "id": "dimsum-mentai",
+    "nama": "Dimsum Mentai",
+    "harga": 3000,
+    "gambar": "assets/images/menu/dimsum-mentai.jpg",
+    "badge": "Premium"
+  },
+  {
+    "id": "ceker-ayam",
+    "nama": "Ceker Ayam",
+    "harga": 1500,
+    "gambar": "assets/images/menu/ceker-ayam.jpg",
+    "badge": ""
+  },
+  {
+    "id": "lumpia-udang",
+    "nama": "Lumpia Udang",
+    "harga": 2500,
+    "gambar": "assets/images/menu/lumpia-udang.jpg",
+    "badge": "Rekomendasi"
+  }
+]

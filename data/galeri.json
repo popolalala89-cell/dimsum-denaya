@@ -1,0 +1,10 @@
+[
+  { "src": "assets/images/gallery/produksi1.jpg", "alt": "Proses produksi dimsum di dapur", "kategori": "produksi" },
+  { "src": "assets/images/gallery/packing1.jpg", "alt": "Packing dimsum rapih dan higienis", "kategori": "packing" },
+  { "src": "assets/images/gallery/dimsum1.jpg", "alt": "Siomay ayam premium siap saji", "kategori": "produk" },
+  { "src": "assets/images/gallery/outlet1.jpg", "alt": "Outlet Dimsum Denaya", "kategori": "outlet" },
+  { "src": "assets/images/gallery/customer1.jpg", "alt": "Pelanggan menikmati dimsum", "kategori": "customer" },
+  { "src": "assets/images/gallery/produksi2.jpg", "alt": "Pembuatan hakau udang", "kategori": "produksi" },
+  { "src": "assets/images/gallery/dimsum2.jpg", "alt": "Dimsum mentai premium", "kategori": "produk" },
+  { "src": "assets/images/gallery/outlet2.jpg", "alt": "Suasana outlet Dimsum Denaya", "kategori": "outlet" }
+]
