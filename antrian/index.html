@@ -344,39 +344,84 @@ function initDeliveryMap() {
     })
   }).addTo(mapInstance);
 
-  // Click on map to place customer pin
+  // Click on map to place / move customer pin
   mapInstance.on('click', function (e) {
-    var lat = e.latlng.lat;
-    var lng = e.latlng.lng;
-
-    // Remove old customer marker if exists
-    if (mapMarker) {
-      mapInstance.removeLayer(mapMarker);
-    }
-
-    // Customer marker (draggable)
-    mapMarker = L.marker([lat, lng], {
-      draggable: true,
-      icon: L.divIcon({
-        className: 'customer-marker',
-        html: '<div style="background:#EF4444;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📍 Anda</div>',
-        iconSize: [80, 30],
-        iconAnchor: [40, 15]
-      })
-    }).addTo(mapInstance);
-
-    // Update on drag
-    mapMarker.on('dragend', function () {
-      updateDistanceAndOngkir(mapMarker.getLatLng().lat, mapMarker.getLatLng().lng);
-    });
-
-    updateDistanceAndOngkir(lat, lng);
+    setCustomerMarker(e.latlng.lat, e.latlng.lng);
   });
 
   mapInitialized = true;
 
   // Fix rendering after map becomes visible
   setTimeout(function () { mapInstance.invalidateSize(); }, 300);
+
+  // Coba deteksi lokasi otomatis
+  tryAutoDetectLocation();
+}
+
+function setCustomerMarker(lat, lng) {
+  // Remove old customer marker if exists
+  if (mapMarker) {
+    mapInstance.removeLayer(mapMarker);
+  }
+
+  // Customer marker (draggable)
+  mapMarker = L.marker([lat, lng], {
+    draggable: true,
+    icon: L.divIcon({
+      className: 'customer-marker',
+      html: '<div style="background:#EF4444;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📍 Anda</div>',
+      iconSize: [80, 30],
+      iconAnchor: [40, 15]
+    })
+  }).addTo(mapInstance);
+
+  // Update on drag
+  mapMarker.on('dragend', function () {
+    updateDistanceAndOngkir(mapMarker.getLatLng().lat, mapMarker.getLatLng().lng);
+  });
+
+  updateDistanceAndOngkir(lat, lng);
+}
+
+function tryAutoDetectLocation() {
+  if (!navigator.geolocation) {
+    $('lokasiInfo').innerHTML = 'Klik peta untuk menandai lokasi Anda';
+    return;
+  }
+
+  $('lokasiInfo').innerHTML = '⏳ Mendeteksi lokasi Anda...';
+
+  navigator.geolocation.getCurrentPosition(
+    function (pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+
+      // Auto-place marker di lokasi user
+      setCustomerMarker(lat, lng);
+
+      // Geser peta biar lokasi user terlihat
+      mapInstance.setView([lat, lng], mapInstance.getZoom());
+
+      $('lokasiInfo').innerHTML = '📍 Terdeteksi otomatis — geser pin jika kurang tepat';
+    },
+    function (err) {
+      // Gagal / ditolak — fallback manual
+      var msg = 'Klik peta untuk menandai lokasi Anda';
+      if (err.code === 1) {
+        msg = '📍 Izin lokasi tidak diberikan. Klik peta untuk menandai lokasi Anda';
+      } else if (err.code === 2) {
+        msg = '📍 Tidak dapat mendeteksi lokasi. Klik peta untuk menandai';
+      } else if (err.code === 3) {
+        msg = '⏳ Waktu habis mendeteksi lokasi. Klik peta untuk menandai';
+      }
+      $('lokasiInfo').innerHTML = msg;
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000
+    }
+  );
 }
 
 function updateDistanceAndOngkir(lat, lng) {
