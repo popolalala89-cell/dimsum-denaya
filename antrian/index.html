@@ -255,13 +255,15 @@ async function init() {
   showStep('stepLoading');
 
   try {
-    // Validasi token
-    let valid = false;
-    try {
-      valid = await ddValidateQrToken(LOKASI, TOKEN);
-    } catch(e) {
-      console.warn('Token validation error:', e);
-      valid = false;
+    // Validasi token (kecuali delivery — langsung dari website)
+    let valid = true;
+    if (LOKASI !== 'rumah') {
+      try {
+        valid = await ddValidateQrToken(LOKASI, TOKEN);
+      } catch(e) {
+        console.warn('Token validation error:', e);
+        valid = false;
+      }
     }
 
     if (!valid) {

@@ -287,56 +287,82 @@ async function ddSubmitOrder(order) {
 // Generate nomor antrian berikutnya
 async function ddGetNextAntrian(lokasi) {
   const sb = ddInitSupabase();
-  if (!sb) return null;
+  if (!sb) return (lokasi === 'kebon_kembang' ? 'KK-' : 'RM-') + '001';
 
-  const today = new Date().toISOString().split('T')[0];
   const prefix = lokasi === 'kebon_kembang' ? 'KK' : 'RM';
+  const today = new Date().toISOString().split('T')[0];
 
-  // Cari nomor terakhir hari ini
-  const { data, error } = await sb
-    .from(DD_TABLE.antrian)
-    .select('nomor_antrian')
-    .eq('tanggal', today)
-    .eq('lokasi', lokasi)
-    .order('nomor_antrian', { ascending: false })
-    .limit(1);
+  try {
+    const { data, error } = await sb
+      .from(DD_TABLE.antrian)
+      .select('nomor_antrian')
+      .eq('tanggal', today)
+      .eq('lokasi', lokasi)
+      .order('nomor_antrian', { ascending: false })
+      .limit(1);
 
-  if (error) throw error;
+    if (error) return prefix + '-001';
 
-  let nextNum = 1;
-  if (data && data.length > 0) {
-    const lastNum = parseInt(data[0].nomor_antrian.split('-')[1], 10);
-    nextNum = (isNaN(lastNum) ? 0 : lastNum) + 1;
+    let nextNum = 1;
+    if (data && data.length > 0) {
+      const lastNum = parseInt(data[0].nomor_antrian.split('-')[1], 10);
+      nextNum = (isNaN(lastNum) ? 0 : lastNum) + 1;
+    }
+
+    return prefix + '-' + String(nextNum).padStart(3, '0');
+  } catch (e) {
+    return prefix + '-001';
   }
-
-  return prefix + '-' + String(nextNum).padStart(3, '0');
 }
 
-// Buat antrian baru
+// Buat antrian baru (dengan fallback lokal jika Supabase error)
 async function ddCreateAntrian(lokasi, nama, noHp) {
   const sb = ddInitSupabase();
-  if (!sb) throw new Error('Supabase not initialized');
+  if (!sb) return {
+    id: 'local-' + Date.now(),
+    nomor_antrian: (lokasi === 'kebon_kembang' ? 'KK-' : 'RM-') + '001',
+    lokasi: lokasi,
+    status: 'menunggu'
+  };
 
   const nomorAntrian = await ddGetNextAntrian(lokasi);
   const today = new Date().toISOString().split('T')[0];
 
-  const { data, error } = await sb
-    .from(DD_TABLE.antrian)
-    .insert([{
-      tanggal: today,
+  try {
+    const { data, error } = await sb
+      .from(DD_TABLE.antrian)
+      .insert([{
+        tanggal: today,
+        nomor_antrian: nomorAntrian,
+        lokasi: lokasi,
+        status: 'menunggu',
+        nama_pelanggan: nama || '',
+        no_hp: noHp || ''
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Create antrian Supabase error, using fallback:', error);
+      return {
+        id: 'local-' + Date.now(),
+        nomor_antrian: nomorAntrian,
+        lokasi: lokasi,
+        status: 'menunggu'
+      };
+    }
+
+    return data;
+  } catch (e) {
+    console.warn('Create antrian exception, using fallback:', e);
+    return {
+      id: 'local-' + Date.now(),
       nomor_antrian: nomorAntrian,
       lokasi: lokasi,
-      status: 'menunggu',
-      nama_pelanggan: nama || '',
-      no_hp: noHp || ''
-    }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+      status: 'menunggu'
+    };
+  }
 }
-
 // Ambil daftar antrian hari ini
 async function ddGetAntrianList(lokasi, statusFilter) {
   const sb = ddInitSupabase();
