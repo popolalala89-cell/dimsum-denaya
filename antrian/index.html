@@ -26,30 +26,13 @@
   <p class="error-hint">Silakan scan QR baru yang tersedia di counter, atau hubungi admin.</p>
 </div>
 
-<!-- STEP 2: Konfirmasi Antrian -->
-<div id="stepAntrian" class="step">
+<!-- STEP 2: Pilih Menu (langsung, tanpa antrian dulu) -->
+<div id="stepMenu" class="step">
   <div class="header">
     <img src="/assets/images/icons/logo.svg" alt="Dimsum Denaya" class="logo" width="48">
     <h1>Dimsum Denaya</h1>
   </div>
-  <div class="nomor-antrian-card">
-    <p class="label">Nomor Antrian Kamu</p>
-    <p class="nomor" id="nomorAntrian">—</p>
-    <p class="lokasi" id="lokasiAntrian">—</p>
-    <p class="hint">Simpan nomor ini, kami akan panggil sesuai urutan</p>
-  </div>
-  <div class="queue-status">
-    <span>🚶 <span id="sisaAntrian">0</span> orang di depan</span>
-    <span>✅ <span id="selesaiAntrian">0</span> selesai</span>
-  </div>
-  <button class="btn btn-primary btn-order" id="btnMulaiPesan">Pilih Menu ➜</button>
-  <button class="btn btn-outline btn-no-order" id="btnPesanNanti">Pesan Nanti</button>
-</div>
-
-<!-- STEP 3: Pilih Menu -->
-<div id="stepMenu" class="step">
-  <button class="btn-back" id="btnBackAntrian">← Kembali</button>
-  <h2>Pilih Menu</h2>
+  <h2 style="margin-top: 0;">Pilih Menu</h2>
   <div class="kategori-chip" id="kategoriChip"></div>
   <div class="menu-grid" id="menuGrid"></div>
 
@@ -62,7 +45,7 @@
   </div>
 </div>
 
-<!-- STEP 4: Form Order -->
+<!-- STEP 3: Form Order -->
 <div id="stepForm" class="step">
   <button class="btn-back" id="btnBackMenu">← Kembali</button>
   <h2>Detail Pesanan</h2>
@@ -119,15 +102,26 @@
   <button class="btn btn-primary btn-large" id="btnSubmitOrder">Pesan Sekarang</button>
 </div>
 
-<!-- STEP 5: Sukses -->
+<!-- STEP 4: Sukses -->
 <div id="stepSukses" class="step">
   <div class="success-icon">✅</div>
   <h2>Pesanan Berhasil!</h2>
   <div class="success-card">
-    <p>Nomor Antrian: <strong id="suksesNomor">—</strong></p>
-    <p id="suksesLokasi">—</p>
+    <div id="suksesAntrianBox">
+      <p class="label" style="font-size:14px;color:#666;margin-bottom:4px">Nomor Antrian Kamu</p>
+      <p class="nomor" style="font-size:48px;font-weight:800;color:var(--primary);margin:0" id="suksesNomor">—</p>
+      <p style="font-size:14px;color:#666;margin-top:4px" id="suksesLokasi">—</p>
+      <div class="queue-status" style="margin-top:12px">
+        <span>🚶 <strong id="suksesSisa">0</strong> orang di depan</span>
+      </div>
+      <p style="font-size:13px;color:#999;margin-top:8px">Simpan nomor ini, kami akan panggil sesuai urutan</p>
+    </div>
+    <div id="suksesDeliveryBox" style="display:none">
+      <p style="font-size:18px;font-weight:600">Pesanan kamu sudah diterima!</p>
+      <p style="font-size:14px;color:#666">Kami akan proses dan hubungi kamu via WhatsApp.</p>
+    </div>
   </div>
-  <p class="success-note">Silakan tunggu nomor antrian dipanggil. Pesanan kamu sedang diproses.</p>
+  <p class="success-note">Terima kasih sudah pesan di Dimsum Denaya 🥟</p>
 </div>
 
 </div>
@@ -241,7 +235,6 @@ const URL_PARAMS = new URLSearchParams(window.location.search);
 const LOKASI = URL_PARAMS.get('lokasi') || 'kebon_kembang';
 const TOKEN = URL_PARAMS.get('token') || '';
 
-let antrianData = null;
 let menuItems = [];
 let cart = {};
 let currentKategori = 'all';
@@ -271,38 +264,15 @@ async function init() {
       return;
     }
 
-    // Buat antrian
-    try {
-      antrianData = await ddCreateAntrian(LOKASI, '', '');
-    } catch(e) {
-      console.error('Create antrian error:', e);
-      $('errorDetail').textContent = e.message || 'Gagal membuat antrian. Coba refresh.';
-      showStep('stepError');
-      return;
-    }
-
-    $('nomorAntrian').textContent = antrianData.nomor_antrian;
-    const labelLokasi = LOKASI === 'kebon_kembang' ? '🌸 Kebon Kembang' : '🏠 Rumah';
-    $('lokasiAntrian').textContent = labelLokasi;
-    $('suksesNomor').textContent = antrianData.nomor_antrian;
-    $('suksesLokasi').textContent = labelLokasi;
-
-    // Update sisa antrian
-    try {
-      const displayData = await ddGetDisplayData(LOKASI);
-      $('sisaAntrian').textContent = displayData.sisa_antrian;
-      $('selesaiAntrian').textContent = displayData.selesai.length;
-    } catch(e) {
-      console.warn('Display data error:', e);
-    }
-
     // Sembunyikan delivery fields untuk dine-in
     if (LOKASI === 'kebon_kembang') {
       $('deliveryFields').classList.add('hidden');
       $('ongkirRow').classList.add('hidden');
     }
 
-    showStep('stepAntrian');
+    // Langsung ke menu, tanpa antrian dulu
+    loadMenu();
+    showStep('stepMenu');
   } catch (e) {
     console.error('Init error:', e);
     $('errorDetail').textContent = 'Terjadi kesalahan. Coba refresh halaman.';
@@ -319,22 +289,9 @@ function showStep(id) {
   window.scrollTo(0, 0);
 }
 
-$('btnMulaiPesan').addEventListener('click', function () {
-  showStep('stepMenu');
-  loadMenu();
-});
-
-$('btnBackAntrian').addEventListener('click', function () {
-  showStep('stepAntrian');
-});
-
 $('btnBackMenu').addEventListener('click', function () {
   showStep('stepMenu');
   updateCartFloat();
-});
-
-$('btnPesanNanti').addEventListener('click', function () {
-  showStep('stepSukses');
 });
 
 // ============================================
@@ -522,6 +479,21 @@ $('btnSubmitOrder').addEventListener('click', async function () {
 
     const metode = document.querySelector('.metode-option.active')?.dataset?.value || 'tunai';
 
+    // STEP 1: Buat antrian dulu (hanya untuk dine-in)
+    let antrianNumber = '';
+    let antrianId = '';
+    if (LOKASI === 'kebon_kembang') {
+      try {
+        const antrianEntry = await ddCreateAntrian(LOKASI, nama, $('inputHp').value.trim());
+        antrianNumber = antrianEntry.nomor_antrian || '';
+        antrianId = antrianEntry.id || '';
+      } catch(e) {
+        console.warn('Antrian creation failed, order tetap diproses:', e);
+        antrianNumber = (LOKASI === 'kebon_kembang' ? 'KK-' : 'RM-') + '001';
+      }
+    }
+
+    // STEP 2: Simpan order
     await ddSubmitOrder({
       name: nama,
       phone: $('inputHp').value.trim(),
@@ -529,19 +501,33 @@ $('btnSubmitOrder').addEventListener('click', async function () {
       lokasi: LOKASI,
       jarak_km: jarakKm,
       ongkir: ongkir,
-      metode_bayar: mete,
-      nomor_antrian: antrianData.nomor_antrian,
+      metode_bayar: metode,
+      nomor_antrian: antrianNumber,
       notes: $('inputCatatan').value.trim(),
       alamat: $('inputAlamat')?.value?.trim() || ''
     });
 
-    // Link antrian dengan order
-    if (antrianData) {
-      // Update antrian status
-      var antrianId = antrianData.id;
-      if (antrianId) {
-        ddUpdateAntrianStatus(antrianId, 'menunggu');
+    // STEP 3: Tampilkan sukses
+    const labelLokasi = LOKASI === 'kebon_kembang' ? '🌸 Kebon Kembang' : '🏠 Rumah';
+
+    if (LOKASI === 'kebon_kembang') {
+      // Dine-in: tampilkan nomor antrian
+      $('suksesAntrianBox').style.display = 'block';
+      $('suksesDeliveryBox').style.display = 'none';
+      $('suksesNomor').textContent = antrianNumber;
+      $('suksesLokasi').textContent = labelLokasi;
+
+      // Hitung sisa antrian
+      try {
+        const displayData = await ddGetDisplayData(LOKASI);
+        $('suksesSisa').textContent = displayData.sisa_antrian || '0';
+      } catch(e) {
+        $('suksesSisa').textContent = '—';
       }
+    } else {
+      // Delivery: tampilkan pesan terima kasih
+      $('suksesAntrianBox').style.display = 'none';
+      $('suksesDeliveryBox').style.display = 'block';
     }
 
     showStep('stepSukses');
