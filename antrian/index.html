@@ -43,7 +43,7 @@
     <span>✅ <span id="selesaiAntrian">0</span> selesai</span>
   </div>
   <button class="btn btn-primary btn-order" id="btnMulaiPesan">Pilih Menu ➜</button>
-  <button class="btn btn-outline btn-no-order">Pesan Nanti</button>
+  <button class="btn btn-outline btn-no-order" id="btnPesanNanti">Pesan Nanti</button>
 </div>
 
 <!-- STEP 3: Pilih Menu -->
@@ -306,7 +306,7 @@ $('btnBackMenu').addEventListener('click', function () {
   updateCartFloat();
 });
 
-$('.btn-no-order').addEventListener('click', function () {
+$('btnPesanNanti').addEventListener('click', function () {
   showStep('stepSukses');
 });
 
