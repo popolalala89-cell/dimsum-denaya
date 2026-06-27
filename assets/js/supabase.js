@@ -16,6 +16,7 @@ const DD_TABLE = {
   galeri: 'dd_galeri',
   config: 'dd_config',
   orders: 'dd_orders',
+  antrian: 'dd_antrian',
 };
 
 // ============================================
@@ -245,22 +246,191 @@ async function ddSubmitOrder(order) {
   const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
   const orderId = 'DD-' + dateStr + '-' + rand;
 
+  const itemDetails = order.items || [];
+  const itemText = Array.isArray(itemDetails)
+    ? itemDetails.map(function (i) { return i.nama + ' x' + i.jumlah; }).join(', ')
+    : '';
+
+  const subTotal = Array.isArray(itemDetails)
+    ? itemDetails.reduce(function (sum, i) { return sum + (i.harga * i.jumlah); }, 0)
+    : (order.total || 0);
+
   const { data, error } = await sb
     .from(DD_TABLE.orders)
     .insert([{
       order_id: orderId,
-      name: order.name,
-      phone: order.phone,
+      name: order.name || '',
+      phone: order.phone || '',
       email: order.email || '',
-      items: order.items || '',
-      total: order.total || 0,
+      items: itemText,
+      item_details: JSON.stringify(itemDetails),
+      sub_total: subTotal,
+      ongkir: order.ongkir || 0,
+      total: subTotal + (order.ongkir || 0),
+      lokasi: order.lokasi || 'rumah',
+      jarak_km: order.jarak_km || 0,
+      metode_bayar: order.metode_bayar || 'tunai',
+      nomor_antrian: order.nomor_antrian || '',
       notes: order.notes || '',
-      status: 'pending'
+      status: 'baru'
     }])
     .select()
     .single();
   if (error) throw error;
+  return { ...data, order_id: orderId };
+}
+
+// ============================================
+// Antrian (Queue System)
+// ============================================
+
+// Generate nomor antrian berikutnya
+async function ddGetNextAntrian(lokasi) {
+  const sb = ddInitSupabase();
+  if (!sb) return null;
+
+  const today = new Date().toISOString().split('T')[0];
+  const prefix = lokasi === 'kebon_kembang' ? 'KK' : 'RM';
+
+  // Cari nomor terakhir hari ini
+  const { data, error } = await sb
+    .from(DD_TABLE.antrian)
+    .select('nomor_antrian')
+    .eq('tanggal', today)
+    .eq('lokasi', lokasi)
+    .order('nomor_antrian', { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+
+  let nextNum = 1;
+  if (data && data.length > 0) {
+    const lastNum = parseInt(data[0].nomor_antrian.split('-')[1], 10);
+    nextNum = (isNaN(lastNum) ? 0 : lastNum) + 1;
+  }
+
+  return prefix + '-' + String(nextNum).padStart(3, '0');
+}
+
+// Buat antrian baru
+async function ddCreateAntrian(lokasi, nama, noHp) {
+  const sb = ddInitSupabase();
+  if (!sb) throw new Error('Supabase not initialized');
+
+  const nomorAntrian = await ddGetNextAntrian(lokasi);
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await sb
+    .from(DD_TABLE.antrian)
+    .insert([{
+      tanggal: today,
+      nomor_antrian: nomorAntrian,
+      lokasi: lokasi,
+      status: 'menunggu',
+      nama_pelanggan: nama || '',
+      no_hp: noHp || ''
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
   return data;
+}
+
+// Ambil daftar antrian hari ini
+async function ddGetAntrianList(lokasi, statusFilter) {
+  const sb = ddInitSupabase();
+  if (!sb) throw new Error('Supabase not initialized');
+
+  const today = new Date().toISOString().split('T')[0];
+  let query = sb
+    .from(DD_TABLE.antrian)
+    .select('*')
+    .eq('tanggal', today)
+    .order('nomor_antrian', { ascending: true });
+
+  if (lokasi) query = query.eq('lokasi', lokasi);
+  if (statusFilter) query = query.eq('status', statusFilter);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+// Update status antrian
+async function ddUpdateAntrianStatus(id, status) {
+  const sb = ddInitSupabase();
+  if (!sb) throw new Error('Supabase not initialized');
+  const { error } = await sb
+    .from(DD_TABLE.antrian)
+    .update({ status: status })
+    .eq('id', id);
+  if (error) throw error;
+  return true;
+}
+
+// Data untuk display antrian (sedang dilayani + 3 antrian berikutnya)
+async function ddGetDisplayData(lokasi) {
+  const sb = ddInitSupabase();
+  if (!sb) throw new Error('Supabase not initialized');
+
+  const today = new Date().toISOString().split('T')[0];
+  const allData = await ddGetAntrianList(lokasi);
+
+  const sedangDilayani = allData.filter(function (a) { return a.status === 'dilayani'; });
+  const menunggu = allData.filter(function (a) { return a.status === 'menunggu'; });
+  const selesai = allData.filter(function (a) { return a.status === 'selesai' || a.status === 'batal'; });
+
+  return {
+    sedang_dilayani: sedangDilayani,
+    menunggu: menunggu,
+    selesai: selesai,
+    total_antrian: allData.length,
+    sisa_antrian: menunggu.length
+  };
+}
+
+// ============================================
+// QR Token
+// ============================================
+
+// Validasi token QR
+async function ddValidateQrToken(lokasi, token) {
+  try {
+    const key = lokasi === 'kebon_kembang' ? 'qr_token_kebon_kembang' : 'qr_token_rumah';
+    const stored = await ddGetConfig(key);
+    return stored === token;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Generate token QR baru
+async function ddRegenerateQrToken(lokasi) {
+  const sb = ddInitSupabase();
+  if (!sb) throw new Error('Supabase not initialized');
+
+  const prefix = lokasi === 'kebon_kembang' ? 'kk' : 'rm';
+  const random = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const newToken = prefix + '-' + random;
+  const key = lokasi === 'kebon_kembang' ? 'qr_token_kebon_kembang' : 'qr_token_rumah';
+
+  const { error } = await sb
+    .from(DD_TABLE.config)
+    .upsert({ key: key, value: newToken, updated_at: new Date().toISOString() });
+
+  if (error) throw error;
+  return newToken;
+}
+
+// Ambil token QR saat ini
+async function ddGetQrToken(lokasi) {
+  try {
+    const key = lokasi === 'kebon_kembang' ? 'qr_token_kebon_kembang' : 'qr_token_rumah';
+    return await ddGetConfig(key);
+  } catch (e) {
+    return null;
+  }
 }
 
 // ============================================

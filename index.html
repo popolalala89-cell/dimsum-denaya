@@ -91,6 +91,7 @@
         <li role="none"><a href="#galeri" class="navbar__link" role="menuitem">Galeri</a></li>
         <li role="none"><a href="#testimoni" class="navbar__link" role="menuitem">Testimoni</a></li>
         <li role="none"><a href="#lokasi" class="navbar__link" role="menuitem">Lokasi</a></li>
+        <li role="none"><a href="/antrian/?lokasi=rumah" class="navbar__link" role="menuitem">Pesan</a></li>
         <li class="navbar__cta--mobile" role="none">
           <a href="https://wa.me/6281234567890?text=Halo%20Dimsum%20Denaya,%20saya%20ingin%20memesan%20dimsum." target="_blank" class="btn btn--primary" data-wa>
             <i class="bi bi-whatsapp"></i> Pesan WhatsApp
@@ -129,8 +130,11 @@
         Nikmati dimsum ayam premium dengan bahan pilihan, dibuat <em>fresh</em> setiap hari untuk keluarga Indonesia.
       </p>
       <div class="hero__actions">
-        <a href="https://wa.me/6281234567890?text=Halo%20Dimsum%20Denaya,%20saya%20ingin%20memesan%20dimsum." target="_blank" class="btn btn--primary btn--lg" data-wa>
-          <i class="bi bi-whatsapp"></i> Pesan via WhatsApp
+        <a href="/antrian/?lokasi=rumah" class="btn btn--primary btn--lg">
+          🛵 Pesan Delivery
+        </a>
+        <a href="https://wa.me/6281234567890?text=Halo%20Dimsum%20Denaya,%20saya%20ingin%20memesan%20dimsum." target="_blank" class="btn btn--outline btn--lg" data-wa>
+          <i class="bi bi-whatsapp"></i> Chat WA
         </a>
         <a href="#menu" class="btn btn--outline btn--lg">
           <i class="bi bi-book"></i> Lihat Menu
@@ -354,7 +358,16 @@
             <span class="faq__icon"><i class="bi bi-plus"></i></span>
           </button>
           <div class="faq__content" id="faq-2-content" role="region" aria-labelledby="faq-2">
-            <p class="faq__answer">Pemesanan bisa melalui WhatsApp dengan mengklik tombol "Pesan via WhatsApp" di website ini. Cukup kirimkan pesan, tim kami akan segera merespon dan memproses pesanan Anda.</p>
+            <p class="faq__answer">
+              Ada dua cara:
+            </p>
+            <ul style="margin-top:8px;padding-left:20px;font-size:0.95rem;line-height:1.8">
+              <li><strong>Pesan Online</strong> — Klik "Pesan Delivery" di website, pilih menu, ongkir otomatis. Data langsung masuk ke sistem kami.</li>
+              <li><strong>Via WhatsApp</strong> — Klik tombol WhatsApp, kirim pesan, tim kami akan proses.</li>
+            </ul>
+            <p class="faq__answer" style="margin-top:8px">
+              Khusus di outlet <strong>Kebon Kembang</strong>, cukup scan QR code di counter untuk ambil antrian dan pesan langsung dari HP!
+            </p>
           </div>
         </div>
 
@@ -401,6 +414,28 @@
             <p class="faq__answer">Kami rutin mengadakan promo seperti paket hemat "Beli 10 Gratis 1" dan promo musiman. Pantau terus website dan Instagram kami untuk info promo terbaru!</p>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- Antrian & Pesan Online -->
+  <!-- ========================================== -->
+  <section id="pesan-online" class="section" style="background: linear-gradient(135deg, #8B1E2D 0%, #5A3825 100%); color: white;">
+    <div class="container text-center" data-aos="fade-up">
+      <span class="section__label" style="color: rgba(255,255,255,0.8);">Pesan Online</span>
+      <h2 class="section__title" style="color: white;">Antri dari HP, Makan Tanpa Ngantri</h2>
+      <p class="section__subtitle" style="color: rgba(255,255,255,0.8); max-width: 600px; margin: 0 auto 24px;">
+        Di Kebon Kembang? Scan QR code di counter untuk ambil nomor antrian dan pesan dari HP.
+        Mau delivery ke rumah? Order online, ongkir otomatis sesuai jarak.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="/antrian/?lokasi=rumah" class="btn" style="background: white; color: #8B1E2D; padding: 14px 28px; border-radius: 12px; font-weight: 600; text-decoration: none;">
+          🛵 Delivery ke Rumah
+        </a>
+        <a href="/antrian/display.html" target="_blank" class="btn" style="background: transparent; color: white; border: 2px solid rgba(255,255,255,0.5); padding: 14px 28px; border-radius: 12px; font-weight: 600; text-decoration: none;">
+          📺 Lihat Antrian
+        </a>
       </div>
     </div>
   </section>
@@ -518,6 +553,8 @@
             <a href="#testimoni" class="footer__link">Testimoni</a>
             <a href="#faq" class="footer__link">FAQ</a>
             <a href="#lokasi" class="footer__link">Lokasi</a>
+            <a href="/antrian/?lokasi=rumah" class="footer__link">Pesan Online</a>
+            <a href="/antrian/display.html" target="_blank" class="footer__link">Status Antrian</a>
           </div>
         </div>
 
