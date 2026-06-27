@@ -359,13 +359,13 @@ function renderMenu() {
     '</div>';
   }).join('');
 
-  // Event listeners
-  grid.addEventListener('click', function (e) {
+  // Event listeners — pakai onclick biar gak numpuk
+  grid.onclick = function (e) {
     const plus = e.target.closest('.plus');
     const minus = e.target.closest('.minus');
     if (plus) { addToCart(plus.dataset.id, 1); }
     else if (minus) { addToCart(minus.dataset.id, -1); }
-  });
+  };
 }
 
 function addToCart(id, delta) {
