@@ -899,7 +899,7 @@
 
         // Simpan data URL ke input
         const gambarData = canvas.toDataURL('image/jpeg', 0.7);
-        input._gambarData = gambarData;
+        document.getElementById('f-gambar')._gambarData = gambarData;
 
         // Preview
         preview.innerHTML = '<img src="' + gambarData + '" style="width:60px;height:60px;object-fit:cover;border-radius:8px">';
