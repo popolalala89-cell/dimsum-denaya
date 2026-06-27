@@ -582,6 +582,30 @@
     openModal('menu', menuId);
   }
 
+  async function populateMenuForm(menuId) {
+    try {
+      const data = await ddGetMenu();
+      const item = data.find(function (m) { return m.menu_id === menuId || m.id === menuId; });
+      if (!item) return;
+      document.getElementById('f-nama').value = item.nama || '';
+      document.getElementById('f-harga').value = item.harga || 0;
+      document.getElementById('f-badge').value = item.badge || '';
+      if (item.kategori) {
+        document.getElementById('f-kategori').value = item.kategori;
+      }
+      document.getElementById('f-deskripsi').value = item.deskripsi || '';
+      // Preview gambar jika ada
+      if (item.gambar) {
+        var preview = document.getElementById('gambarPreview');
+        if (preview) {
+          preview.innerHTML = '<img src="' + item.gambar + '" style="width:60px;height:60px;object-fit:cover;border-radius:8px">';
+        }
+      }
+    } catch (e) {
+      console.warn('populateMenuForm error:', e);
+    }
+  }
+
   async function deleteMenu(menuId) {
     if (!confirm('Hapus menu ini?')) return;
     try {
@@ -791,7 +815,7 @@
           <label>Foto Menu</label>
           <div style="display:flex;gap:12px;align-items:center">
             <input type="file" class="form-input" id="f-gambar" accept="image/*" style="flex:1">
-            <div id="gambarPreview" style="width:60px;height:60px;border-radius:8px;overflow:hidden;background:#f5f5f5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px">📷</div>
+            <div id="gambarPreview" style="width:60px;height:60px;border-radius:8px;overflow:hidden;background:#f5f5f5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px"></div>
           </div>
           <p style="font-size:12px;color:#666;margin-top:4px">Format: JPG/PNG. Maks 1MB. Foto akan otomatis di-compress.</p>
         </div>
@@ -799,6 +823,8 @@
       `;
       // Init file preview
       setTimeout(function(){initGambarUpload();}, 50);
+      // Isi data jika edit
+      if (editingId) populateMenuForm(editingId);
     } else if (type === 'testimoni') {
       title.textContent = 'Tambah Testimoni';
       fields.innerHTML = `
@@ -895,20 +921,22 @@
       if (editingType === 'menu') {
         // Kompres gambar jika ada file baru
         const gambarInput = document.getElementById('f-gambar');
-        let gambarData = gambarInput._gambarData || '';
+        const gambarData = gambarInput._gambarData;
 
         const data = {
-          menu_id: (editingId || document.getElementById('f-nama').value.toLowerCase().replace(/\\s+/g, '-')),
           nama: document.getElementById('f-nama').value,
           harga: parseInt(document.getElementById('f-harga').value),
           badge: document.getElementById('f-badge').value || '',
           kategori: document.getElementById('f-kategori').value,
-          gambar: gambarData,
           deskripsi: document.getElementById('f-deskripsi').value || ''
         };
+        if (gambarData) {
+          data.gambar = gambarData;
+        }
         if (editingId) {
           await ddUpdateMenuItem(editingId, data);
         } else {
+          data.menu_id = document.getElementById('f-nama').value.toLowerCase().replace(/\s+/g, '-');
           await ddAddMenuItem(data);
         }
         showToast('Menu tersimpan', 'success');
