@@ -339,7 +339,7 @@ function renderMenu() {
     const id = m.menu_id || m.id;
     const qty = cart[id] || 0;
     const imgHtml = m.gambar
-      ? '<img src="' + m.gambar + '" alt="' + m.nama + '" loading="lazy">'
+      ? '<img src="' + m.gambar + '" alt="' + m.nama + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<span style=font-size:24px>🥟</span>\'">'
       : '<span style="font-size:24px">🥟</span>';
     const badgeHtml = m.badge ? '<span class="menu-item-badge">' + m.badge + '</span>' : '';
     const hargaStr = 'Rp ' + (m.harga || 0).toLocaleString('id-ID');
