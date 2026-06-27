@@ -7,7 +7,7 @@
 // Configuration (sama dengan LaunchPage Studio)
 // ============================================
 const DD_SUPABASE_URL = 'https://ifozejithwettwcayzqb.supabase.co';
-const DD_SUPABASE_ANON_KEY = 'eyJhbG...jPHM'; // GANTI dengan anon key real setelah buat Supabase user
+const DD_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlmb3plaml0aHdldHR3Y2F5enFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODI4NTksImV4cCI6MjA5ODA1ODg1OX0.iV6BBTNKIZ7knXYi0-5B_CYgsote-Mg1BpAvlbJjPHM';
 
 // Prefix tabel untuk Dimsum Denaya (biar tidak bentrok dengan LaunchPage)
 const DD_TABLE = {
