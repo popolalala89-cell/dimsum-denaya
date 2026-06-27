@@ -787,9 +787,18 @@
             <option value="minuman">Minuman</option>
           </select>
         </div>
-        <div class="form-group"><label>Path Gambar</label><input type="text" class="form-input" id="f-gambar" placeholder="assets/images/menu/nama.svg"></div>
+        <div class="form-group">
+          <label>Foto Menu</label>
+          <div style="display:flex;gap:12px;align-items:center">
+            <input type="file" class="form-input" id="f-gambar" accept="image/*" style="flex:1">
+            <div id="gambarPreview" style="width:60px;height:60px;border-radius:8px;overflow:hidden;background:#f5f5f5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px">📷</div>
+          </div>
+          <p style="font-size:12px;color:#666;margin-top:4px">Format: JPG/PNG. Maks 1MB. Foto akan otomatis di-compress.</p>
+        </div>
         <div class="form-group"><label>Deskripsi</label><textarea class="form-input" id="f-deskripsi" rows="2"></textarea></div>
       `;
+      // Init file preview
+      setTimeout(function(){initGambarUpload();}, 50);
     } else if (type === 'testimoni') {
       title.textContent = 'Tambah Testimoni';
       fields.innerHTML = `
@@ -825,6 +834,55 @@
     editingType = null;
   }
 
+  // Image upload handler — kompres & preview
+  function initGambarUpload() {
+    const input = document.getElementById('f-gambar');
+    if (!input) return;
+    // Remove old listener to avoid duplicates
+    input.removeEventListener('change', handleGambarChange);
+    input.addEventListener('change', handleGambarChange);
+  }
+
+  function handleGambarChange() {
+    const file = this.files && this.files[0];
+    const preview = document.getElementById('gambarPreview');
+    if (!file) return;
+
+    // Cek size (max 1MB)
+    if (file.size > 1048576) {
+      alert('File terlalu besar! Maks 1MB.');
+      this.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        // Kompres ke maks 400px
+        const maxW = 400, maxH = 400;
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = h * maxW / w; w = maxW; }
+        if (h > maxH) { w = w * maxH / h; h = maxH; }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Simpan data URL ke input
+        const gambarData = canvas.toDataURL('image/jpeg', 0.7);
+        input._gambarData = gambarData;
+
+        // Preview
+        preview.innerHTML = '<img src="' + gambarData + '" style="width:60px;height:60px;object-fit:cover;border-radius:8px">';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   document.getElementById('modalForm').addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -835,13 +893,17 @@
 
     try {
       if (editingType === 'menu') {
+        // Kompres gambar jika ada file baru
+        const gambarInput = document.getElementById('f-gambar');
+        let gambarData = gambarInput._gambarData || '';
+
         const data = {
-          menu_id: (editingId || document.getElementById('f-nama').value.toLowerCase().replace(/\s+/g, '-')),
+          menu_id: (editingId || document.getElementById('f-nama').value.toLowerCase().replace(/\\s+/g, '-')),
           nama: document.getElementById('f-nama').value,
           harga: parseInt(document.getElementById('f-harga').value),
           badge: document.getElementById('f-badge').value || '',
           kategori: document.getElementById('f-kategori').value,
-          gambar: document.getElementById('f-gambar').value || 'assets/images/menu/' + document.getElementById('f-nama').value.toLowerCase().replace(/\s+/g, '-') + '.svg',
+          gambar: gambarData,
           deskripsi: document.getElementById('f-deskripsi').value || ''
         };
         if (editingId) {

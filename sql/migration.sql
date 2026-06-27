@@ -7,6 +7,7 @@
 -- 1. ALTER dd_menu: tambah kolom tersedia_order
 -- ============================================
 ALTER TABLE dd_menu ADD COLUMN IF NOT EXISTS tersedia_order BOOLEAN DEFAULT TRUE;
+ALTER TABLE dd_menu ADD COLUMN IF NOT EXISTS gambar TEXT DEFAULT NULL;
 
 -- ============================================
 -- 2. TABLE BARU: dd_antrian
