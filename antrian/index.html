@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/assets/js/supabase.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <div id="app">
@@ -64,16 +66,13 @@
       <textarea id="inputAlamat" placeholder="Masukkan alamat lengkap" rows="2"></textarea>
     </div>
     <div class="form-group">
-      <label>Perkiraan Jarak</label>
-      <select id="inputJarak">
-        <option value="0">Pilih jarak dari rumah</option>
-        <option value="1">Kurang dari 1 km</option>
-        <option value="2">1 - 2 km</option>
-        <option value="3">2 - 3 km</option>
-        <option value="5">3 - 5 km</option>
-        <option value="7">5 - 7 km</option>
-        <option value="10">Lebih dari 7 km</option>
-      </select>
+      <label>📍 Pilih Lokasi di Peta</label>
+      <div id="mapContainer" style="height:250px;border-radius:10px;overflow:hidden;border:1px solid var(--border);"></div>
+      <div id="lokasiInfo" style="margin-top:8px;font-size:13px;color:var(--muted);">
+        Klik peta untuk menandai lokasi Anda
+      </div>
+      <div id="ongkirInfo" style="margin-top:4px;font-size:15px;font-weight:700;color:var(--primary);display:none;"></div>
+      <input type="hidden" id="inputJarak" value="0">
     </div>
   </div>
   <div class="form-group">
@@ -239,6 +238,16 @@ let menuItems = [];
 let cart = {};
 let currentKategori = 'all';
 
+// Koordinat toko (Rumah)
+const RUMAH_LAT = -6.3940019;
+const RUMAH_LNG = 107.4668351;
+const TARIF_PER_KM = 2000;
+
+// Map state
+let mapInstance = null;
+let mapMarker = null;
+let mapInitialized = false;
+
 function $(id) { return document.getElementById(id); }
 
 // ============================================
@@ -287,6 +296,103 @@ function showStep(id) {
   document.querySelectorAll('.step').forEach(function (s) { s.classList.remove('active'); });
   $(id).classList.add('active');
   window.scrollTo(0, 0);
+}
+
+// ============================================
+// Map (Delivery — Rumah)
+// ============================================
+function haversineKm(lat1, lng1, lat2, lng2) {
+  var R = 6371;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function initDeliveryMap() {
+  if (mapInitialized) {
+    // Map already exists — just invalidate size (fix rendering after hidden->visible)
+    setTimeout(function () { mapInstance.invalidateSize(); }, 200);
+    return;
+  }
+
+  var container = $('mapContainer');
+  if (!container) return;
+
+  // Init map centered on store
+  mapInstance = L.map('mapContainer', {
+    center: [RUMAH_LAT, RUMAH_LNG],
+    zoom: 15,
+    zoomControl: true
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap',
+    maxZoom: 19
+  }).addTo(mapInstance);
+
+  // Store marker
+  L.marker([RUMAH_LAT, RUMAH_LNG], {
+    icon: L.divIcon({
+      className: 'store-marker',
+      html: '<div style="background:#2563EB;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🏠 Dimsum Denaya</div>',
+      iconSize: [150, 30],
+      iconAnchor: [75, 15]
+    })
+  }).addTo(mapInstance);
+
+  // Click on map to place customer pin
+  mapInstance.on('click', function (e) {
+    var lat = e.latlng.lat;
+    var lng = e.latlng.lng;
+
+    // Remove old customer marker if exists
+    if (mapMarker) {
+      mapInstance.removeLayer(mapMarker);
+    }
+
+    // Customer marker (draggable)
+    mapMarker = L.marker([lat, lng], {
+      draggable: true,
+      icon: L.divIcon({
+        className: 'customer-marker',
+        html: '<div style="background:#EF4444;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📍 Anda</div>',
+        iconSize: [80, 30],
+        iconAnchor: [40, 15]
+      })
+    }).addTo(mapInstance);
+
+    // Update on drag
+    mapMarker.on('dragend', function () {
+      updateDistanceAndOngkir(mapMarker.getLatLng().lat, mapMarker.getLatLng().lng);
+    });
+
+    updateDistanceAndOngkir(lat, lng);
+  });
+
+  mapInitialized = true;
+
+  // Fix rendering after map becomes visible
+  setTimeout(function () { mapInstance.invalidateSize(); }, 300);
+}
+
+function updateDistanceAndOngkir(lat, lng) {
+  var jarak = haversineKm(RUMAH_LAT, RUMAH_LNG, lat, lng);
+  var jarakBulat = Math.round(jarak * 10) / 10; // 1 decimal
+  var ongkir = Math.ceil(jarak) * TARIF_PER_KM; // dibulatkan ke atas untuk ongkir
+
+  // Simpan jarak (km, bulat ke atas untuk perhitungan ongkir)
+  $('inputJarak').value = Math.ceil(jarak);
+  $('lokasiInfo').innerHTML = '📍 Jarak: <strong>' + jarakBulat.toFixed(1) + ' km</strong> dari toko';
+
+  var ongkirEl = $('ongkirInfo');
+  ongkirEl.style.display = 'block';
+  ongkirEl.innerHTML = '🚚 Ongkir: <strong>Rp ' + ongkir.toLocaleString('id-ID') + '</strong> (' + Math.ceil(jarak) + ' km × Rp ' + TARIF_PER_KM.toLocaleString('id-ID') + ')';
+
+  updateTotal();
 }
 
 $('btnBackMenu').addEventListener('click', function () {
@@ -404,6 +510,10 @@ $('btnLanjutOrder').addEventListener('click', function () {
   if (Object.keys(cart).length === 0) return;
   showStep('stepForm');
   renderOrderSummary();
+  // Init map untuk delivery (Rumah)
+  if (LOKASI !== 'kebon_kembang') {
+    initDeliveryMap();
+  }
   updateTotal();
 });
 
@@ -434,14 +544,11 @@ function updateTotal() {
   let ongkir = 0;
   if (LOKASI !== 'kebon_kembang') {
     const jarak = parseInt($('inputJarak').value) || 0;
-    const tarifPerKm = 2000;
-    ongkir = jarak * tarifPerKm;
+    ongkir = jarak * TARIF_PER_KM;
     $('totalOngkir').textContent = 'Rp ' + ongkir.toLocaleString('id-ID');
   }
   $('totalAkhir').textContent = 'Rp ' + (subtotal + ongkir).toLocaleString('id-ID');
 }
-
-$('inputJarak').addEventListener('change', updateTotal);
 
 // Metode bayar
 document.querySelectorAll('.metode-option').forEach(function (el) {
@@ -474,7 +581,7 @@ $('btnSubmitOrder').addEventListener('click', async function () {
     let jarakKm = 0;
     if (LOKASI !== 'kebon_kembang') {
       jarakKm = parseInt($('inputJarak').value) || 0;
-      ongkir = jarakKm * 2000;
+      ongkir = jarakKm * TARIF_PER_KM;
     }
 
     const metode = document.querySelector('.metode-option.active')?.dataset?.value || 'tunai';
